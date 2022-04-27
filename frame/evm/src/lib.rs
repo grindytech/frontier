@@ -637,6 +637,7 @@ pub trait OnChargeEVMTransaction<T: Config> {
 	/// the corrected amount.
 	fn correct_and_deposit_fee(
 		who: &H160,
+		target: Option<H160>,
 		corrected_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
 	);
@@ -682,6 +683,7 @@ where
 
 	fn correct_and_deposit_fee(
 		who: &H160,
+		_target: Option<H160>,
 		corrected_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
 	) {
@@ -751,10 +753,11 @@ impl<T> OnChargeEVMTransaction<T> for ()
 
 	fn correct_and_deposit_fee(
 		who: &H160,
+		target: Option<H160>,
 		corrected_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
 	) {
-		<EVMCurrencyAdapter::<<T as Config>::Currency, ()> as OnChargeEVMTransaction<T>>::correct_and_deposit_fee(who, corrected_fee, already_withdrawn)
+		<EVMCurrencyAdapter::<<T as Config>::Currency, ()> as OnChargeEVMTransaction<T>>::correct_and_deposit_fee(who, target, corrected_fee, already_withdrawn)
 	}
 
 	fn pay_priority_fee(tip: U256) {

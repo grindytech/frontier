@@ -45,6 +45,7 @@ impl<T: Config> Runner<T> {
 	/// Execute an EVM operation.
 	pub fn execute<'config, 'precompiles, F, R>(
 		source: H160,
+		target: Option<H160>,
 		value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
@@ -161,7 +162,7 @@ impl<T: Config> Runner<T> {
 		// Refunded 320 - 40 = 280.
 		// Tip 5 * 6 = 30.
 		// Burned 320 - (280 + 30) = 10. Which is equivalent to gas_used * base_fee.
-		T::OnChargeTransaction::correct_and_deposit_fee(&source, actual_fee, fee);
+		T::OnChargeTransaction::correct_and_deposit_fee(&source, target, actual_fee, fee);
 		if let Some(actual_priority_fee) = actual_priority_fee {
 			T::OnChargeTransaction::pay_priority_fee(actual_priority_fee);
 		}
@@ -221,6 +222,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		let precompiles = T::PrecompilesValue::get();
 		Self::execute(
 			source,
+			Some(target),
 			value,
 			gas_limit,
 			max_fee_per_gas,
@@ -246,6 +248,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		let precompiles = T::PrecompilesValue::get();
 		Self::execute(
 			source,
+			None,
 			value,
 			gas_limit,
 			max_fee_per_gas,
@@ -278,6 +281,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		let code_hash = H256::from_slice(Keccak256::digest(&init).as_slice());
 		Self::execute(
 			source,
+			None,
 			value,
 			gas_limit,
 			max_fee_per_gas,
