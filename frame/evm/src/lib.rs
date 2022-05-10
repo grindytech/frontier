@@ -249,6 +249,7 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
@@ -303,6 +304,7 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
@@ -406,6 +408,11 @@ pub mod pallet {
 	#[pallet::getter(fn account_storages)]
 	pub type AccountStorages<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, H160, Blake2_128Concat, H256, H256, ValueQuery>;
+		
+	/// Holding the contract creator when the contract is created succeed
+	#[pallet::storage]
+	#[pallet::getter(fn contract_creator)]
+	pub type ContractCreator<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
 }
 
 /// Type alias for currency balance.
