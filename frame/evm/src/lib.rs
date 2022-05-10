@@ -442,6 +442,17 @@ pub trait EnsureAddressOrigin<OuterOrigin> {
 	) -> Result<Self::Success, OuterOrigin>;
 }
 
+pub trait GetContractCreator {
+	fn get_contract_creator(contract: &H160) -> Option<H160>;
+}
+
+impl<T: Config> GetContractCreator for Pallet<T> {
+	fn get_contract_creator(contract: &H160) -> Option<H160> {
+		ContractCreator::<T>::get(contract)
+	}
+}
+
+
 /// Ensure that the EVM address is the same as the Substrate address. This only works if the account
 /// ID is `H160`.
 pub struct EnsureAddressSame;
