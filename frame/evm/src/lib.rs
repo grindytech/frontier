@@ -249,6 +249,7 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
@@ -303,6 +304,7 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
+					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
