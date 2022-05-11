@@ -24,7 +24,9 @@ use crate::{
 use evm::{
 	backend::Backend as BackendT,
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
-	ExitError, ExitReason, Transfer,
+	ExitError, ExitReason,
+	ExitSucceed::Returned,
+	Transfer,
 };
 use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
 use frame_support::{
@@ -34,6 +36,7 @@ use frame_support::{
 use sha3::{Digest, Keccak256};
 use sp_core::{H160, H256, U256};
 use sp_runtime::traits::UniqueSaturatedInto;
+use sp_std::if_std;
 use sp_std::{boxed::Box, collections::btree_set::BTreeSet, marker::PhantomData, mem, vec::Vec};
 
 #[derive(Default)]
@@ -246,7 +249,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		config: &evm::Config,
 	) -> Result<CreateInfo, Self::Error> {
 		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
+		let result = Self::execute(
 			source,
 			None,
 			value,
@@ -258,11 +261,19 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 			&precompiles,
 			|executor| {
 				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+
 				let (reason, _) =
 					executor.transact_create(source, value, init, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(exe) = &result {
+			if exe.exit_reason == ExitReason::Succeed(Returned) {
+				Pallet::<T>::add_contract_creator(&exe.value, &source);
+			}
+		}
+
+		result
 	}
 
 	fn create2(
@@ -279,7 +290,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 	) -> Result<CreateInfo, Self::Error> {
 		let precompiles = T::PrecompilesValue::get();
 		let code_hash = H256::from_slice(Keccak256::digest(&init).as_slice());
-		Self::execute(
+		let result = Self::execute(
 			source,
 			None,
 			value,
@@ -299,7 +310,13 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(exe) = &result {
+			if exe.exit_reason == ExitReason::Succeed(Returned) {
+				Pallet::<T>::add_contract_creator(&exe.value, &source);
+			}
+		}
+		result
 	}
 }
 
