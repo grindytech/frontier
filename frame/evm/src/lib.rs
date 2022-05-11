@@ -412,7 +412,7 @@ pub mod pallet {
 	/// Holding the contract creator when the contract is created succeed
 	#[pallet::storage]
 	#[pallet::getter(fn contract_creator)]
-	pub type ContractCreator<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
+	pub(super) type ContractCreator<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
 }
 
 /// Type alias for currency balance.
@@ -638,6 +638,10 @@ impl<T: Config> Pallet<T> {
 		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 
 		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}
+
+	pub fn add_contract_creator(contract: &H160, creator: &H160) {
+		ContractCreator::<T>::insert(contract, creator);
 	}
 }
 
