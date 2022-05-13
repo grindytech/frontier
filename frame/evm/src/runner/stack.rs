@@ -19,14 +19,14 @@
 
 use crate::{
 	runner::Runner as RunnerT, AccountCodes, AccountStorages, AddressMapping, BlockHashMapping,
-	Config, Error, Event, FeeCalculator, OnChargeEVMTransaction, Pallet,
+	Config, Error, Event, FeeCalculator, OnChargeEVMTransaction, Pallet, ContractCreator
 };
 use evm::{
 	backend::Backend as BackendT,
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
 	ExitError, ExitReason,
 	ExitSucceed::Returned,
-	Transfer,
+	Transfer
 };
 use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
 use frame_support::{
@@ -269,7 +269,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		);
 		if let Ok(exe) = &result {
 			if exe.exit_reason == ExitReason::Succeed(Returned) {
-				Pallet::<T>::add_contract_creator(&exe.value, &source);
+				Pallet::<T>::insert_contract(&exe.value, &source);
 			}
 		}
 
@@ -313,7 +313,7 @@ impl<T: Config> RunnerT<T> for Runner<T> {
 		);
 		if let Ok(exe) = &result {
 			if exe.exit_reason == ExitReason::Succeed(Returned) {
-				Pallet::<T>::add_contract_creator(&exe.value, &source);
+				Pallet::<T>::insert_contract(&exe.value, &source);
 			}
 		}
 		result

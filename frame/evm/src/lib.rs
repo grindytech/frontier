@@ -249,7 +249,6 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
@@ -304,7 +303,6 @@ pub mod pallet {
 					value: create_address,
 					..
 				} => {
-					ContractCreator::<T>::insert(create_address, source);
 					Pallet::<T>::deposit_event(Event::<T>::Created(create_address));
 				}
 				CreateInfo {
@@ -411,8 +409,7 @@ pub mod pallet {
 		
 	/// Holding the contract creator when the contract is created succeed
 	#[pallet::storage]
-	#[pallet::getter(fn contract_creator)]
-	pub(super) type ContractCreator<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
+	pub(super) type Creators<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
 }
 
 /// Type alias for currency balance.
@@ -442,13 +439,18 @@ pub trait EnsureAddressOrigin<OuterOrigin> {
 	) -> Result<Self::Success, OuterOrigin>;
 }
 
-pub trait GetContractCreator {
-	fn get_contract_creator(contract: &H160) -> Option<H160>;
+pub trait ContractCreator {
+	fn get_creator(contract: &H160) -> Option<H160>;
+	fn insert_contract(contract: &H160, contract: &H160);
 }
 
-impl<T: Config> GetContractCreator for Pallet<T> {
-	fn get_contract_creator(contract: &H160) -> Option<H160> {
-		ContractCreator::<T>::get(contract)
+impl<T: Config> ContractCreator for Pallet<T> {
+	fn get_creator(contract: &H160) -> Option<H160> {
+		Creators::<T>::get(contract)
+	}
+
+	fn insert_contract(contract: &H160, creator: &H160) {
+		Creators::<T>::insert(contract, creator)
 	}
 }
 
@@ -638,10 +640,6 @@ impl<T: Config> Pallet<T> {
 		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 
 		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
-	}
-
-	pub fn add_contract_creator(contract: &H160, creator: &H160) {
-		ContractCreator::<T>::insert(contract, creator);
 	}
 }
 
