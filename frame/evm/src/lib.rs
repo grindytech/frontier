@@ -441,7 +441,7 @@ pub trait EnsureAddressOrigin<OuterOrigin> {
 
 pub trait ContractCreator {
 	fn get_creator(contract: &H160) -> Option<H160>;
-	fn insert_contract(contract: &H160, contract: &H160);
+	fn insert_contract(contract: &H160, creator: &H160);
 }
 
 impl<T: Config> ContractCreator for Pallet<T> {
