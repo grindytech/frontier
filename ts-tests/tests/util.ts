@@ -4,8 +4,8 @@ import { JsonRpcResponse } from "web3-core-helpers";
 import { spawn, ChildProcess } from "child_process";
 
 export const PORT = 19931;
-export const RPC_PORT = 19932;
-export const WS_PORT = 19933;
+export const RPC_PORT = 9933;
+export const WS_PORT = 9944;
 
 export const DISPLAY_LOG = process.env.FRONTIER_LOG || false;
 export const FRONTIER_LOG = process.env.FRONTIER_LOG || "info";
