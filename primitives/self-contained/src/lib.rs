@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ pub use crate::{
 };
 
 use sp_runtime::{
-	traits::{Dispatchable, PostDispatchInfoOf},
+	traits::{DispatchInfoOf, Dispatchable, PostDispatchInfoOf},
 	transaction_validity::{TransactionValidity, TransactionValidityError},
 };
 
@@ -43,7 +43,12 @@ pub trait SelfContainedCall: Dispatchable {
 	fn check_self_contained(&self) -> Option<Result<Self::SignedInfo, TransactionValidityError>>;
 	/// Validate a self-contained function. Returns `None` if the
 	/// function is not a self-contained.
-	fn validate_self_contained(&self, info: &Self::SignedInfo) -> Option<TransactionValidity>;
+	fn validate_self_contained(
+		&self,
+		info: &Self::SignedInfo,
+		dispatch_info: &DispatchInfoOf<Self>,
+		len: usize,
+	) -> Option<TransactionValidity>;
 	/// Do any pre-flight stuff for a self-contained call.
 	///
 	/// Note this function by default delegates to `validate_self_contained`, so that

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2015-2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2015-2022 Parity Technologies (UK) Ltd.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@ mod net;
 mod web3;
 
 pub use self::{
-	eth::{EthApi, EthApiServer, EthFilterApi, EthFilterApiServer},
-	eth_pubsub::{EthPubSubApi, EthPubSubApiServer},
-	net::{NetApi, NetApiServer},
-	web3::{Web3Api, Web3ApiServer},
+	eth::{EthApiServer, EthFilterApiServer},
+	eth_pubsub::EthPubSubApiServer,
+	net::NetApiServer,
+	web3::Web3ApiServer,
 };

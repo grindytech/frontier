@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,23 +19,24 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use ethereum_types::H256;
-use jsonrpc_core::Result;
+use jsonrpsee::core::RpcResult as Result;
 use sp_api::{Core, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_core::keccak_256;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-use fc_rpc_core::{types::Bytes, Web3Api as Web3ApiT};
+use fc_rpc_core::{types::Bytes, Web3ApiServer};
 use fp_rpc::EthereumRuntimeRPCApi;
 
 use crate::internal_err;
 
-pub struct Web3Api<B, C> {
+/// Web3 API implementation.
+pub struct Web3<B, C> {
 	client: Arc<C>,
 	_marker: PhantomData<B>,
 }
 
-impl<B, C> Web3Api<B, C> {
+impl<B, C> Web3<B, C> {
 	pub fn new(client: Arc<C>) -> Self {
 		Self {
 			client,
@@ -44,7 +45,7 @@ impl<B, C> Web3Api<B, C> {
 	}
 }
 
-impl<B, C> Web3ApiT for Web3Api<B, C>
+impl<B, C> Web3ApiServer for Web3<B, C>
 where
 	B: BlockT<Hash = H256> + Send + Sync + 'static,
 	C: HeaderBackend<B> + ProvideRuntimeApi<B> + Send + Sync + 'static,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 // limitations under the License.
 
 use frame_support::weights::{DispatchInfo, GetDispatchInfo};
-use sp_debug_derive::RuntimeDebug;
 use sp_runtime::{
 	traits::{
 		self, DispatchInfoOf, Dispatchable, MaybeDisplay, Member, PostDispatchInfoOf,
@@ -25,6 +24,7 @@ use sp_runtime::{
 	transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
 	},
+	RuntimeDebug,
 };
 
 use crate::SelfContainedCall;
@@ -87,11 +87,12 @@ where
 				let unsigned_validation = U::validate_unsigned(source, &self.function)?;
 				Ok(valid.combine_with(unsigned_validation))
 			}
-			CheckedSignature::SelfContained(signed_info) => {
-				self.function.validate_self_contained(&signed_info).ok_or(
-					TransactionValidityError::Invalid(InvalidTransaction::BadProof),
-				)?
-			}
+			CheckedSignature::SelfContained(signed_info) => self
+				.function
+				.validate_self_contained(signed_info, info, len)
+				.ok_or(TransactionValidityError::Invalid(
+					InvalidTransaction::BadProof,
+				))?,
 		}
 	}
 

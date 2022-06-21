@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ where
 			}
 		}
 
-		let timeout = self.timeout.clone();
+		let timeout = self.timeout;
 		let inner_delay = self.inner_delay.get_or_insert_with(|| Delay::new(timeout));
 
 		match Future::poll(Pin::new(inner_delay), cx) {

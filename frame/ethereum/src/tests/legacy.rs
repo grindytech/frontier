@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ fn legacy_erc20_creation_unsigned_transaction() -> LegacyUnsignedTransaction {
 		gas_limit: U256::from(0x100000),
 		action: ethereum::TransactionAction::Create,
 		value: U256::zero(),
-		input: FromHex::from_hex(ERC20_CONTRACT_BYTECODE).unwrap(),
+		input: hex::decode(ERC20_CONTRACT_BYTECODE.trim_end()).unwrap(),
 	}
 }
 
@@ -42,7 +42,7 @@ fn transaction_should_increment_nonce() {
 	ext.execute_with(|| {
 		let t = legacy_erc20_creation_transaction(alice);
 		assert_ok!(Ethereum::execute(alice.address, &t, None,));
-		assert_eq!(EVM::account_basic(&alice.address).nonce, U256::from(1));
+		assert_eq!(EVM::account_basic(&alice.address).0.nonce, U256::from(1));
 	});
 }
 
@@ -60,9 +60,15 @@ fn transaction_without_enough_gas_should_not_work() {
 
 		let call = crate::Call::<Test>::transact { transaction };
 		let source = call.check_self_contained().unwrap().unwrap();
+		let extrinsic = CheckedExtrinsic::<u64, crate::mock::Call, SignedExtra, _> {
+			signed: fp_self_contained::CheckedSignature::SelfContained(source),
+			function: Call::Ethereum(call.clone()),
+		};
+		let dispatch_info = extrinsic.get_dispatch_info();
 
 		assert_err!(
-			call.validate_self_contained(&source).unwrap(),
+			call.validate_self_contained(&source, &dispatch_info, 0)
+				.unwrap(),
 			InvalidTransaction::Payment
 		);
 	});
@@ -83,9 +89,15 @@ fn transaction_with_to_low_nonce_should_not_work() {
 			transaction: signed,
 		};
 		let source = call.check_self_contained().unwrap().unwrap();
+		let extrinsic = CheckedExtrinsic::<u64, crate::mock::Call, SignedExtra, H160> {
+			signed: fp_self_contained::CheckedSignature::SelfContained(source),
+			function: Call::Ethereum(call.clone()),
+		};
+		let dispatch_info = extrinsic.get_dispatch_info();
 
 		assert_eq!(
-			call.validate_self_contained(&source).unwrap(),
+			call.validate_self_contained(&source, &dispatch_info, 0)
+				.unwrap(),
 			ValidTransactionBuilder::default()
 				.and_provides((alice.address, U256::from(1)))
 				.priority(0u64)
@@ -105,9 +117,15 @@ fn transaction_with_to_low_nonce_should_not_work() {
 			transaction: signed2,
 		};
 		let source2 = call2.check_self_contained().unwrap().unwrap();
+		let extrinsic2 = CheckedExtrinsic::<u64, crate::mock::Call, SignedExtra, _> {
+			signed: fp_self_contained::CheckedSignature::SelfContained(source),
+			function: Call::Ethereum(call2.clone()),
+		};
 
 		assert_err!(
-			call2.validate_self_contained(&source2).unwrap(),
+			call2
+				.validate_self_contained(&source2, &extrinsic2.get_dispatch_info(), 0)
+				.unwrap(),
 			InvalidTransaction::Stale
 		);
 	});
@@ -266,15 +284,14 @@ fn call_should_handle_errors() {
 			gas_limit: U256::from(0x100000),
 			action: ethereum::TransactionAction::Create,
 			value: U256::zero(),
-			input: FromHex::from_hex(contract).unwrap(),
+			input: hex::decode(contract).unwrap(),
 		}
 		.sign(&alice.private_key);
 		assert_ok!(Ethereum::execute(alice.address, &t, None,));
 
-		let contract_address: Vec<u8> =
-			FromHex::from_hex("32dcab0ef3fb2de2fce1d2e0799d36239671f04a").unwrap();
-		let foo: Vec<u8> = FromHex::from_hex("c2985578").unwrap();
-		let bar: Vec<u8> = FromHex::from_hex("febb0f7e").unwrap();
+		let contract_address = hex::decode("32dcab0ef3fb2de2fce1d2e0799d36239671f04a").unwrap();
+		let foo = hex::decode("c2985578").unwrap();
+		let bar = hex::decode("febb0f7e").unwrap();
 
 		let t2 = LegacyUnsignedTransaction {
 			nonce: U256::from(1),
@@ -292,8 +309,8 @@ fn call_should_handle_errors() {
 		match info {
 			CallOrCreateInfo::Call(info) => {
 				assert_eq!(
-					info.value.to_hex::<String>(),
-					"0000000000000000000000000000000000000000000000000000000000000001".to_owned()
+					hex::encode(info.value),
+					"0000000000000000000000000000000000000000000000000000000000000001"
 				);
 			}
 			CallOrCreateInfo::Create(_) => panic!("expected call info"),

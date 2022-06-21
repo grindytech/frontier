@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2021 Parity Technologies (UK) Ltd.
+// Copyright (c) 2021-2022 Parity Technologies (UK) Ltd.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#[cfg(feature = "parity-db")]
+mod parity_db_adapter;
 mod utils;
 
 use std::{
@@ -27,6 +29,7 @@ use std::{
 use codec::{Decode, Encode};
 use fp_storage::{EthereumStorageSchema, PALLET_ETHEREUM_SCHEMA_CACHE};
 use parking_lot::Mutex;
+pub use sc_client_db::DatabaseSource;
 use sp_core::H256;
 pub use sp_database::Database;
 use sp_runtime::traits::Block as BlockT;
@@ -38,28 +41,7 @@ pub type DbHash = [u8; DB_HASH_LEN];
 /// Database settings.
 pub struct DatabaseSettings {
 	/// Where to find the database.
-	pub source: DatabaseSettingsSrc,
-}
-
-/// Where to find the database.
-#[derive(Debug, Clone)]
-pub enum DatabaseSettingsSrc {
-	/// Load a RocksDB database from a given path. Recommended for most uses.
-	RocksDb {
-		/// Path to the database.
-		path: PathBuf,
-		/// Cache size in MiB.
-		cache_size: usize,
-	},
-}
-
-impl DatabaseSettingsSrc {
-	/// Return dabase path for databases that are on the disk.
-	pub fn path(&self) -> Option<&Path> {
-		match self {
-			DatabaseSettingsSrc::RocksDb { path, .. } => Some(path.as_path()),
-		}
-	}
+	pub source: DatabaseSource,
 }
 
 pub(crate) mod columns {
@@ -71,7 +53,7 @@ pub(crate) mod columns {
 	pub const SYNCED_MAPPING: u32 = 3;
 }
 
-pub(crate) mod static_keys {
+pub mod static_keys {
 	pub const CURRENT_SYNCING_TIPS: &[u8] = b"CURRENT_SYNCING_TIPS";
 }
 
@@ -80,7 +62,34 @@ pub struct Backend<Block: BlockT> {
 	mapping: Arc<MappingDb<Block>>,
 }
 
+/// Returns the frontier database directory.
+pub fn frontier_database_dir(db_config_dir: &Path, db_path: &str) -> PathBuf {
+	db_config_dir.join("frontier").join(db_path)
+}
+
 impl<Block: BlockT> Backend<Block> {
+	pub fn open(database: &DatabaseSource, db_config_dir: &Path) -> Result<Self, String> {
+		Self::new(&DatabaseSettings {
+			source: match database {
+				DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+					path: frontier_database_dir(db_config_dir, "db"),
+					cache_size: 0,
+				},
+				DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+					path: frontier_database_dir(db_config_dir, "paritydb"),
+				},
+				DatabaseSource::Auto { .. } => DatabaseSource::Auto {
+					rocksdb_path: frontier_database_dir(db_config_dir, "db"),
+					paritydb_path: frontier_database_dir(db_config_dir, "paritydb"),
+					cache_size: 0,
+				},
+				_ => {
+					return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string())
+				}
+			},
+		})
+	}
+
 	pub fn new(config: &DatabaseSettings) -> Result<Self, String> {
 		let db = utils::open_database(config)?;
 
@@ -115,7 +124,7 @@ impl<Block: BlockT> MetaDb<Block> {
 	pub fn current_syncing_tips(&self) -> Result<Vec<Block::Hash>, String> {
 		match self.db.get(
 			crate::columns::META,
-			&crate::static_keys::CURRENT_SYNCING_TIPS,
+			crate::static_keys::CURRENT_SYNCING_TIPS,
 		) {
 			Some(raw) => {
 				Ok(Vec::<Block::Hash>::decode(&mut &raw[..]).map_err(|e| format!("{:?}", e))?)
@@ -172,13 +181,14 @@ impl<Block: BlockT> MetaDb<Block> {
 	}
 }
 
+#[derive(Debug)]
 pub struct MappingCommitment<Block: BlockT> {
 	pub block_hash: Block::Hash,
 	pub ethereum_block_hash: H256,
 	pub ethereum_transaction_hashes: Vec<H256>,
 }
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Clone, Encode, Debug, Decode, PartialEq)]
 pub struct TransactionMetadata<Block: BlockT> {
 	pub block_hash: Block::Hash,
 	pub ethereum_block_hash: H256,

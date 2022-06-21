@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 // This file is part of Frontier.
 //
-// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+// Copyright (c) 2020-2022 Parity Technologies (UK) Ltd.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,6 +15,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+#![allow(clippy::too_many_arguments)]
 
 mod worker;
 
@@ -78,7 +80,7 @@ where
 			.current_block(&id)
 			.map_err(|e| format!("{:?}", e))?;
 		let block_hash = block
-			.ok_or("Ethereum genesis block not found".to_string())?
+			.ok_or_else(|| "Ethereum genesis block not found".to_string())?
 			.header
 			.hash();
 		let mapping_commitment = fc_db::MappingCommitment::<Block> {
