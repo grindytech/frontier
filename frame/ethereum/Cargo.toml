@@ -31,12 +31,13 @@ frame-system = {version = "4.0.0-dev", git = "https://github.com/paritytech/subs
 pallet-timestamp = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false}
 
 # Frontier
-fp-consensus = {version = "2.0.0-dev", path = "../../primitives/consensus", default-features = false}
-fp-evm = {version = "3.0.0-dev", path = "../../primitives/evm", default-features = false}
-fp-rpc = {version = "3.0.0-dev", path = "../../primitives/rpc", default-features = false}
-fp-self-contained = {version = "1.0.0-dev", path = "../../primitives/self-contained", default-features = false}
-fp-storage = {version = "2.0.0", path = "../../primitives/storage", default-features = false}
-pallet-evm = {version = "6.0.0-dev", path = "../evm", default-features = false}
+fp-consensus = { version = "2.0.0-dev", path = "../../primitives/consensus", default-features = false }
+fp-ethereum = { version = "1.0.0-dev", path = "../../primitives/ethereum", default-features = false }
+fp-evm = { version = "3.0.0-dev", path = "../../primitives/evm", default-features = false }
+fp-rpc = { version = "3.0.0-dev", path = "../../primitives/rpc", default-features = false }
+fp-self-contained = { version = "1.0.0-dev", path = "../../primitives/self-contained", default-features = false }
+fp-storage = { version = "2.0.0", path = "../../primitives/storage", default-features = false }
+pallet-evm = { version = "6.0.0-dev", path = "../evm", default-features = false }
 
 [dev-dependencies]
 hex = "0.4.3"
@@ -49,31 +50,36 @@ pallet-balances = {version = "4.0.0-dev", git = "https://github.com/paritytech/s
 
 [features]
 default = ["std"]
+std = [
+	"ethereum/std",
+	"evm/std",
+	"serde",
+	# Parity
+	"codec/std",
+	"ethereum-types/std",
+	"rlp/std",
+	"scale-info/std",
+	# Substrate
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	# Substrate FRAME
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-timestamp/std",
+	# Frontier
+	"fp-consensus/std",
+	"fp-ethereum/std",
+	"fp-evm/std",
+	"fp-rpc/std",
+	"fp-self-contained/std",
+	"fp-storage/std",
+	"pallet-evm/std",
+]
 runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-evm/runtime-benchmarks",
-]
-std = [
-  "ethereum/std",
-  "evm/std",
-  "serde", # Parity
-  "codec/std",
-  "ethereum-types/std",
-  "rlp/std",
-  "scale-info/std", # Substrate
-  "sp-io/std",
-  "sp-runtime/std",
-  "sp-std/std", # Substrate FRAME
-  "frame-support/std",
-  "frame-system/std",
-  "pallet-timestamp/std", # Frontier
-  "fp-consensus/std",
-  "fp-evm/std",
-  "fp-rpc/std",
-  "fp-self-contained/std",
-  "fp-storage/std",
-  "pallet-evm/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
