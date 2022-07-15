@@ -76,7 +76,7 @@ benchmarks! {
 		let value = U256::default();
 		let gas_limit_create: u64 = 1_250_000 * 1_000_000_000;
 		let is_transactional = true;
-		let validate = false;
+		let validate = true;
 		let create_runner_results = T::Runner::create(
 			caller,
 			contract_bytecode,
@@ -110,7 +110,7 @@ benchmarks! {
 		let nonce_as_u256: U256 = nonce.into();
 
 		let is_transactional = true;
-		let validate = false;
+		let validate = true;
 		let call_runner_results = T::Runner::call(
 			caller,
 			contract_address,
