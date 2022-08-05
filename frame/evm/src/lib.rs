@@ -480,6 +480,10 @@ pub mod pallet {
 	#[pallet::getter(fn account_storages)]
 	pub type AccountStorages<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, H160, Blake2_128Concat, H256, H256, ValueQuery>;
+		
+	/// Holding the contract creator when the contract is created succeed
+	#[pallet::storage]
+	pub(super) type Creators<T: Config> = StorageMap<_, Blake2_128Concat, H160, H160>;
 }
 
 /// Type alias for currency balance.
@@ -508,6 +512,22 @@ pub trait EnsureAddressOrigin<OuterOrigin> {
 		origin: OuterOrigin,
 	) -> Result<Self::Success, OuterOrigin>;
 }
+
+pub trait ContractCreator {
+	fn get_creator(contract: &H160) -> Option<H160>;
+	fn insert_contract(contract: &H160, creator: &H160);
+}
+
+impl<T: Config> ContractCreator for Pallet<T> {
+	fn get_creator(contract: &H160) -> Option<H160> {
+		Creators::<T>::get(contract)
+	}
+
+	fn insert_contract(contract: &H160, creator: &H160) {
+		Creators::<T>::insert(contract, creator)
+	}
+}
+
 
 /// Ensure that the EVM address is the same as the Substrate address. This only works if the account
 /// ID is `H160`.
@@ -717,6 +737,7 @@ pub trait OnChargeEVMTransaction<T: Config> {
 	/// Returns the `NegativeImbalance` - if any - produced by the priority fee.
 	fn correct_and_deposit_fee(
 		who: &H160,
+		target: Option<H160>,
 		corrected_fee: U256,
 		base_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
@@ -767,6 +788,7 @@ where
 
 	fn correct_and_deposit_fee(
 		who: &H160,
+		_target: Option<H160>,
 		corrected_fee: U256,
 		base_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
@@ -848,11 +870,12 @@ U256: UniqueSaturatedInto<BalanceOf<T>>,
 
 	fn correct_and_deposit_fee(
 		who: &H160,
+		target: Option<H160>,
 		corrected_fee: U256,
 		base_fee: U256,
 		already_withdrawn: Self::LiquidityInfo,
 	) -> Self::LiquidityInfo {
-		<EVMCurrencyAdapter::<<T as Config>::Currency, ()> as OnChargeEVMTransaction<T>>::correct_and_deposit_fee(who, corrected_fee, base_fee, already_withdrawn)
+		<EVMCurrencyAdapter::<<T as Config>::Currency, ()> as OnChargeEVMTransaction<T>>::correct_and_deposit_fee(who, target, corrected_fee, base_fee, already_withdrawn)
 	}
 
 	fn pay_priority_fee(tip: Self::LiquidityInfo) {

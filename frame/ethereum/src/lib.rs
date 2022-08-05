@@ -32,7 +32,8 @@ mod tests;
 use ethereum_types::{Bloom, BloomInput, H160, H256, H64, U256};
 use evm::ExitReason;
 use fp_consensus::{PostLog, PreLog, FRONTIER_ENGINE_ID};
-use fp_ethereum::{TransactionData, ValidatedTransaction as ValidatedTransactionT};
+use fp_ethereum::{TransactionData};
+// use fp_ethereum::{ValidatedTransaction as ValidatedTransactionT};
 use fp_evm::{
 	CallOrCreateInfo, CheckEvmTransaction, CheckEvmTransactionConfig, InvalidEvmTransactionError,
 };
@@ -842,12 +843,12 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-pub struct ValidatedTransaction<T>(PhantomData<T>);
-impl<T: Config> ValidatedTransactionT for ValidatedTransaction<T> {
-	fn apply(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
-		Pallet::<T>::apply_validated_transaction(source, transaction)
-	}
-}
+// pub struct ValidatedTransaction<T>(PhantomData<T>);
+// impl<T: Config> ValidatedTransactionT for ValidatedTransaction<T> {
+// 	fn apply(source: H160, transaction: Transaction) -> frame_support::dispatch::DispatchResultWithPostInfo {
+// 		Pallet::<T>::apply_validated_transaction(source, transaction)
+// 	}
+// }
 
 #[derive(Eq, PartialEq, Clone, RuntimeDebug)]
 pub enum ReturnValue {

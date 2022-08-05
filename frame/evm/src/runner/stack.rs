@@ -25,13 +25,17 @@ use crate::{
 use evm::{
 	backend::Backend as BackendT,
 	executor::stack::{Accessed, StackExecutor, StackState as StackStateT, StackSubstateMetadata},
-	ExitError, ExitReason, Transfer,
+	ExitError, ExitReason,
+	ExitSucceed::Returned,
+	Transfer
 };
 use fp_evm::{CallInfo, CreateInfo, ExecutionInfo, Log, Vicinity};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use sp_core::{H160, H256, U256};
 use sp_runtime::traits::UniqueSaturatedInto;
+use sp_std::if_std;
 use sp_std::{boxed::Box, collections::btree_set::BTreeSet, marker::PhantomData, mem, vec::Vec};
+use crate::ContractCreator;
 
 #[derive(Default)]
 pub struct Runner<T: Config> {
@@ -45,6 +49,7 @@ where
 	/// Execute an already validated EVM operation.
 	fn execute<'config, 'precompiles, F, R>(
 		source: H160,
+		target: Option<H160>,
 		value: U256,
 		gas_limit: u64,
 		max_fee_per_gas: Option<U256>,
@@ -150,6 +155,7 @@ where
 		// Burned 200 - (160 + 30) = 10. Which is equivalent to gas_used * base_fee.
 		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
 			&source,
+			target,
 			// Actual fee after evm execution, including tip.
 			actual_fee,
 			// Base fee.
@@ -281,6 +287,7 @@ where
 		let precompiles = T::PrecompilesValue::get();
 		Self::execute(
 			source,
+			Some(target),
 			value,
 			gas_limit,
 			max_fee_per_gas,
@@ -321,8 +328,9 @@ where
 			)?;
 		}
 		let precompiles = T::PrecompilesValue::get();
-		Self::execute(
+		let result = Self::execute(
 			source,
+			None,
 			value,
 			gas_limit,
 			max_fee_per_gas,
@@ -332,11 +340,19 @@ where
 			is_transactional,
 			|executor| {
 				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+
 				let (reason, _) =
 					executor.transact_create(source, value, init, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(exe) = &result {
+			if exe.exit_reason == ExitReason::Succeed(Returned) {
+				Pallet::<T>::insert_contract(&exe.value, &source);
+			}
+		}
+
+		result
 	}
 
 	fn create2(
@@ -370,8 +386,9 @@ where
 		}
 		let precompiles = T::PrecompilesValue::get();
 		let code_hash = H256::from(sp_io::hashing::keccak_256(&init));
-		Self::execute(
+		let result = Self::execute(
 			source,
+			None,
 			value,
 			gas_limit,
 			max_fee_per_gas,
@@ -389,7 +406,13 @@ where
 					executor.transact_create2(source, value, init, salt, gas_limit, access_list);
 				(reason, address)
 			},
-		)
+		);
+		if let Ok(exe) = &result {
+			if exe.exit_reason == ExitReason::Succeed(Returned) {
+				Pallet::<T>::insert_contract(&exe.value, &source);
+			}
+		}
+		result
 	}
 }
 
